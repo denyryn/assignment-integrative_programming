@@ -1,5 +1,11 @@
 pipeline {
-    agent any
+    // Use Docker agent with Python image
+    agent {
+        docker {
+            image 'python:3.13-alpine'  // Lightweight Python 3.13 image
+            args '--user root'       // Run as root to avoid permission issues
+        }
+    }
     
     triggers {
         // Poll SCM every minute (for demo)
@@ -8,6 +14,8 @@ pipeline {
     
     environment {
         PYTHONUNBUFFERED = '1'  // For real-time output
+        // Set working directory
+        WORKDIR = 'chap-3-calculator'
     }
     
     stages {
@@ -16,16 +24,22 @@ pipeline {
                 checkout scm
                 echo '[SUCCESS] Code checked out successfully'
                 sh 'ls -la'  // Show files for debugging
+                sh 'ls -la chap-3-calculator/'  // Show calculator directory
             }
         }
         
         stage('Setup Python Environment') {
             steps {
-                echo '[INFO] Setting up Python environment...'
+                echo '[INFO] Setting up Python environment in Docker container...'
                 sh 'python3 --version'
                 sh 'pip3 install --upgrade pip'
-                // Install any requirements if needed
-                sh 'pip3 install -r requirements.txt || echo "No requirements.txt found"'
+                
+                // Navigate to calculator directory and install requirements
+                dir('chap-3-calculator') {
+                    // Install any requirements if needed
+                    sh 'pip3 install -r requirements.txt || echo "No requirements.txt found"'
+                    sh 'pip3 list'  // Show installed packages
+                }
             }
         }
         
@@ -34,8 +48,10 @@ pipeline {
                 echo '[INFO] Running tests with verbose output (-v)...'
                 echo '=================================================='
                 
-                // THIS IS THE KEY COMMAND - Running test with -v flag
-                sh 'python3 test-calculator.py -v'
+                // Navigate to the correct directory and run tests
+                dir('chap-3-calculator') {
+                    sh 'python3 test-calculator.py -v'
+                }
                 
                 echo '=================================================='
                 echo '[SUCCESS] All tests passed successfully!'
@@ -45,6 +61,13 @@ pipeline {
         stage('Additional Linting (Optional)') {
             steps {
                 echo '[INFO] Running code quality checks...'
+                dir('chap-3-calculator') {
+                    // Install and run pylint if desired
+                    sh '''
+                        pip3 install pylint || echo "pylint installation skipped"
+                        # pylint test-calculator.py || echo "Linting issues found"
+                    '''
+                }
                 echo '[INFO] Linting completed'
             }
         }
@@ -53,21 +76,15 @@ pipeline {
     post {
         success {
             echo '[SUCCESS] Pipeline succeeded! All tests passed ✅'
-            // Optional: Send success notification
-            // emailext subject: "Build Passed", body: "All tests passed!"
         }
         
         failure {
             echo '[ERROR] Pipeline failed! Tests failed ❌'
             echo '[ERROR] Check the test output above for details'
-            // Optional: Send failure notification
-            // emailext subject: "Build Failed", body: "Please check the logs"
         }
         
         always {
             echo '[INFO] Pipeline execution completed'
-            // Clean up or archive artifacts
-            // archiveArtifacts artifacts: 'test-reports/*.xml'
         }
     }
 }
