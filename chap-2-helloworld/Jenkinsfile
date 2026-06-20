@@ -1,0 +1,52 @@
+pipeline {
+    agent any
+
+    environment {
+        CONFIG           = readProperties(file: '.env')
+        DOCKER_REPO      = "${CONFIG.DOCKER_REPO}"
+        STAGING_HOST     = "${CONFIG.STAGING_HOST}"
+        STAGING_USER     = "${CONFIG.STAGING_USER}"
+        CREDENTIALS_ID   = "${CONFIG.JENKINS_CREDENTIALS_ID}"
+        VERSION_TAG      = "${new Date().format('yyyyMMdd-HHmmss')}"
+    }
+
+    stages {
+        stage("Build & Push Docker Image") {
+            steps {
+                script {
+                    def fullImage = "${DOCKER_REPO}:${VERSION_TAG}"
+                    sh "docker build -t ${fullImage} ."
+                    sh "docker push ${fullImage}"
+                }
+            }
+        }
+
+        stage("Deploy to Staging") {
+            steps {
+                sshagent(credentials: ["${CREDENTIALS_ID}"]) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${STAGING_USER}@${STAGING_HOST} \
+                            "kubectl set image deployment/flask-hello \
+                                flask-hello=${DOCKER_REPO}:${VERSION_TAG}"
+                    """
+                }
+            }
+        }
+
+        stage("Performance Testing") {
+            steps {
+                sh "chmod +x performance-test.sh"
+                sh "./performance-test.sh"
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Pipeline succeeded — deployed ${DOCKER_REPO}:${VERSION_TAG}"
+        }
+        failure {
+            echo "Pipeline failed — check logs above."
+        }
+    }
+}
