@@ -8,16 +8,19 @@ pipeline {
         CREDENTIALS_ID   = 'staging-ssh-key'
         BASE_IMAGE       = 'python:3.11-slim'
         APP_PORT         = '8000'
+        PROJECT_DIR      = 'chap-2-helloworld'
         VERSION_TAG      = "${new Date().format('yyyyMMdd-HHmmss')}"
     }
 
     stages {
         stage("Build & Push Docker Image") {
             steps {
-                script {
-                    def fullImage = "${DOCKER_REPO}:${VERSION_TAG}"
-                    sh "docker build --build-arg BASE_IMAGE=${BASE_IMAGE} --build-arg APP_PORT=${APP_PORT} -t ${fullImage} ."
-                    sh "docker push ${fullImage}"
+                dir(PROJECT_DIR) {
+                    script {
+                        def fullImage = "${DOCKER_REPO}:${VERSION_TAG}"
+                        sh "docker build --build-arg BASE_IMAGE=${BASE_IMAGE} --build-arg APP_PORT=${APP_PORT} -t ${fullImage} ."
+                        sh "docker push ${fullImage}"
+                    }
                 }
             }
         }
@@ -36,8 +39,10 @@ pipeline {
 
         stage("Performance Testing") {
             steps {
-                sh "chmod +x performance-test.sh"
-                sh "APP_URL=http://${STAGING_HOST}:30007/hello ./performance-test.sh"
+                dir(PROJECT_DIR) {
+                    sh "chmod +x performance-test.sh"
+                    sh "APP_URL=http://${STAGING_HOST}:30007/hello ./performance-test.sh"
+                }
             }
         }
     }
