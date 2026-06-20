@@ -3,6 +3,8 @@ pipeline {
 
     environment {
         CONFIG           = readProperties(file: '.env')
+        BASE_IMAGE       = "${CONFIG.BASE_IMAGE}"
+        APP_PORT         = "${CONFIG.APP_PORT}"
         DOCKER_REPO      = "${CONFIG.DOCKER_REPO}"
         STAGING_HOST     = "${CONFIG.STAGING_HOST}"
         STAGING_USER     = "${CONFIG.STAGING_USER}"
@@ -15,7 +17,7 @@ pipeline {
             steps {
                 script {
                     def fullImage = "${DOCKER_REPO}:${VERSION_TAG}"
-                    sh "docker build -t ${fullImage} ."
+                    sh "docker build --build-arg BASE_IMAGE=${BASE_IMAGE} --build-arg APP_PORT=${APP_PORT} -t ${fullImage} ."
                     sh "docker push ${fullImage}"
                 }
             }

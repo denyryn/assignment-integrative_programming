@@ -1,4 +1,7 @@
-FROM python:3.11-slim
+ARG BASE_IMAGE=python:3.11-slim
+FROM ${BASE_IMAGE}
+
+ARG APP_PORT=8000
 
 WORKDIR /app
 
@@ -7,6 +10,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 8000
+EXPOSE ${APP_PORT}
 
-CMD ["flask", "--app", "main", "run", "--host=0.0.0.0", "--port=8000"]
+ENV APP_PORT=${APP_PORT}
+
+CMD flask --app main run --host=0.0.0.0 --port=${APP_PORT}
