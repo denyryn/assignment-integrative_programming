@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # --- Configuration ---
-URL="http://localhost:8000/hello"
+URL="${APP_URL:-http://localhost:8000/hello}"
 TOTAL_REQUESTS=100
 TOTAL_TIME=0
 

@@ -2,13 +2,12 @@ pipeline {
     agent any
 
     environment {
-        CONFIG           = readProperties(file: '.env')
-        BASE_IMAGE       = "${CONFIG.BASE_IMAGE}"
-        APP_PORT         = "${CONFIG.APP_PORT}"
-        DOCKER_REPO      = "${CONFIG.DOCKER_REPO}"
-        STAGING_HOST     = "${CONFIG.STAGING_HOST}"
-        STAGING_USER     = "${CONFIG.STAGING_USER}"
-        CREDENTIALS_ID   = "${CONFIG.JENKINS_CREDENTIALS_ID}"
+        DOCKER_REPO      = credentials('DOCKER_REPO')
+        STAGING_HOST     = credentials('STAGING_HOST')
+        STAGING_USER     = credentials('STAGING_USER')
+        CREDENTIALS_ID   = 'staging-ssh-key'
+        BASE_IMAGE       = 'python:3.11-slim'
+        APP_PORT         = '8000'
         VERSION_TAG      = "${new Date().format('yyyyMMdd-HHmmss')}"
     }
 
@@ -38,7 +37,7 @@ pipeline {
         stage("Performance Testing") {
             steps {
                 sh "chmod +x performance-test.sh"
-                sh "./performance-test.sh"
+                sh "APP_URL=http://${STAGING_HOST}:30007/hello ./performance-test.sh"
             }
         }
     }
