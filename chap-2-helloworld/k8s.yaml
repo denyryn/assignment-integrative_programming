@@ -47,6 +47,26 @@ spec:
   selector:
     app: flask-hello
   ports:
-    - port: 8000
+    - name: http
+      port: 8000
       targetPort: 8000
       nodePort: 30007
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: flask-hello
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: flask-hello
+                port:
+                  number: 8000

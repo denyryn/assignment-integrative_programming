@@ -8,6 +8,7 @@ pipeline {
         CREDENTIALS_ID   = 'staging-ssh-key'
         BASE_IMAGE       = 'python:3.11-slim'
         APP_PORT         = '8000'
+        INGRESS_PORT     = '30080'
         PROJECT_DIR      = 'chap-2-helloworld'
         VERSION_TAG      = "${new Date().format('yyyyMMdd-HHmmss')}"
     }
@@ -49,7 +50,7 @@ pipeline {
                 dir(PROJECT_DIR) {
                     sh '''
                         chmod +x performance-test.sh
-                        APP_URL="http://$STAGING_HOST:30007/hello" ./performance-test.sh
+                        APP_URL="http://$STAGING_HOST:$INGRESS_PORT/hello" ./performance-test.sh
                     '''
                 }
             }
