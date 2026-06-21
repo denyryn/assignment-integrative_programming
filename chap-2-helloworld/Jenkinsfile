@@ -30,15 +30,13 @@ pipeline {
 
         stage("Deploy to Staging") {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-registry', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                withCredentials([string(credentialsId: 'docker-registry', variable: 'DOCKER_PASS')]) {
                     sshagent(credentials: ["${CREDENTIALS_ID}"]) {
                         sh """
                             ssh -o StrictHostKeyChecking=no ${STAGING_USER}@${STAGING_HOST} \
-                                export KUBECONFIG=/home/etmint/.kube/config && \
-                                source ~/.bashrc && \
-                                "echo '${DOCKER_PASS}' | docker login -u '${DOCKER_USER}' --password-stdin && \
-                                kubectl set image deployment/flask-hello \
-                                    flask-hello=${DOCKER_REPO}:${VERSION_TAG}"
+                                "export KUBECONFIG=/home/etmint/.kube/config && \
+                                echo '${DOCKER_PASS}' | docker login -u ryntryna --password-stdin && \
+                                kubectl set image deployment/flask-hello flask-hello=${DOCKER_REPO}:${VERSION_TAG}"
                         """
                     }
                 }
