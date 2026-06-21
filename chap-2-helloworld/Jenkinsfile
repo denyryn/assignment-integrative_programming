@@ -30,7 +30,7 @@ pipeline {
 
         stage("Deploy to Staging") {
             steps {
-                withCredentials([string(credentialsId: 'docker-registry', variable: 'DOCKER_PASS')]) {
+                withCredentials([usernamePassword(credentialsId: 'docker-registry', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sshagent(credentials: ["${CREDENTIALS_ID}"]) {
                         sh """
                             ssh -o StrictHostKeyChecking=no ${STAGING_USER}@${STAGING_HOST} \
