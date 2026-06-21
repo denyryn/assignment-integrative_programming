@@ -7,11 +7,6 @@ pipeline {
         }
     }
     
-    triggers {
-        // Poll SCM every minute (for demo)
-        pollSCM('* * * * *')
-    }
-    
     environment {
         PYTHONUNBUFFERED = '1'  // For real-time output
         // Set working directory
