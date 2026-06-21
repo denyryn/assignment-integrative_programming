@@ -46,8 +46,10 @@ pipeline {
         stage("Performance Testing") {
             steps {
                 dir(PROJECT_DIR) {
-                    sh "chmod +x performance-test.sh"
-                    sh "APP_URL=http://${STAGING_HOST}:30007/hello ./performance-test.sh"
+                    sh """
+                        chmod +x performance-test.sh
+                        APP_URL=http://${STAGING_HOST}:30007/hello ./performance-test.sh
+                    """
                 }
             }
         }
