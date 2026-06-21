@@ -16,10 +16,13 @@ pipeline {
         stage("Build & Push Docker Image") {
             steps {
                 dir(PROJECT_DIR) {
-                    script {
-                        def fullImage = "${DOCKER_REPO}:${VERSION_TAG}"
-                        sh "docker build --build-arg BASE_IMAGE=${BASE_IMAGE} --build-arg APP_PORT=${APP_PORT} -t ${fullImage} ."
-                        sh "docker push ${fullImage}"
+                    withCredentials([usernamePassword(credentialsId: 'docker-registry', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        script {
+                            def fullImage = "${DOCKER_REPO}:${VERSION_TAG}"
+                            sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
+                            sh "docker build --build-arg BASE_IMAGE=${BASE_IMAGE} --build-arg APP_PORT=${APP_PORT} -t ${fullImage} ."
+                            sh "docker push ${fullImage}"
+                        }
                     }
                 }
             }
@@ -27,12 +30,15 @@ pipeline {
 
         stage("Deploy to Staging") {
             steps {
-                sshagent(credentials: ["${CREDENTIALS_ID}"]) {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no ${STAGING_USER}@${STAGING_HOST} \
-                            "kubectl set image deployment/flask-hello \
-                                flask-hello=${DOCKER_REPO}:${VERSION_TAG}"
-                    """
+                withCredentials([usernamePassword(credentialsId: 'docker-registry', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sshagent(credentials: ["${CREDENTIALS_ID}"]) {
+                        sh """
+                            ssh -o StrictHostKeyChecking=no ${STAGING_USER}@${STAGING_HOST} \
+                                "echo '${DOCKER_PASS}' | docker login -u '${DOCKER_USER}' --password-stdin && \
+                                 kubectl set image deployment/flask-hello \
+                                    flask-hello=${DOCKER_REPO}:${VERSION_TAG}"
+                        """
+                    }
                 }
             }
         }
