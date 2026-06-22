@@ -4,8 +4,6 @@ pipeline {
     environment {
         DOCKER_REPO      = credentials('DOCKER_REPO')
         STAGING_HOST     = credentials('STAGING_HOST')
-        STAGING_USER     = credentials('STAGING_USER')
-        CREDENTIALS_ID   = 'staging-ssh-key'
         BASE_IMAGE       = 'python:3.11-slim'
         APP_PORT         = '8000'
         INGRESS_PORT     = '30080'
@@ -14,14 +12,21 @@ pipeline {
     }
 
     stages {
-        stage("Build & Push Docker Image") {
+        stage("Build Docker Image") {
+            steps {
+                dir(PROJECT_DIR) {
+                    sh 'docker build --build-arg BASE_IMAGE=$BASE_IMAGE --build-arg APP_PORT=$APP_PORT -t "$DOCKER_REPO:${BUILD_TIMESTAMP}" .'
+                }
+            }
+        }
+
+        stage("Push Docker Image") {
             steps {
                 dir(PROJECT_DIR) {
                     withCredentials([usernamePassword(credentialsId: 'docker-registry', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         script {
                             sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
-                            sh 'docker build --build-arg BASE_IMAGE=$BASE_IMAGE --build-arg APP_PORT=$APP_PORT -t "$DOCKER_REPO:$VERSION_TAG" .'
-                            sh 'docker push "$DOCKER_REPO:$VERSION_TAG"'
+                            sh 'docker push "$DOCKER_REPO:${BUILD_TIMESTAMP}"'
                         }
                     }
                 }
@@ -30,16 +35,10 @@ pipeline {
 
         stage("Deploy to Staging") {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-registry', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sshagent(credentials: [CREDENTIALS_ID]) {
-                        sh '''
-                            scp -o StrictHostKeyChecking=no "$PROJECT_DIR/k8s.yaml" "$STAGING_USER@$STAGING_HOST":/tmp/k8s.yaml
-                            ssh -o StrictHostKeyChecking=no "$STAGING_USER@$STAGING_HOST" "
-                                echo '\''$DOCKER_PASS'\'' | docker login -u ryntryna --password-stdin &&
-                                kubectl apply -f /tmp/k8s.yaml &&
-                                kubectl set image deployment/flask-hello flask-hello=\"$DOCKER_REPO:$VERSION_TAG\"
-                            "
-                        '''
+                dir(PROJECT_DIR) {
+                    withKubeConfig(credentialsId: 'kubeconfig-staging') {
+                        sh 'kubectl apply -f k8s.yaml'
+                        sh 'kubectl set image deployment/flask-hello flask-hello="$DOCKER_REPO:$VERSION_TAG"'
                     }
                 }
             }
