@@ -37,6 +37,7 @@ pipeline {
             steps {
                 dir(PROJECT_DIR) {
                     withKubeConfig(credentialsId: 'kubeconfig-staging') {
+                        sh "kubectl config use-context staging"
                         sh 'kubectl apply -f k8s.yaml'
                         sh 'kubectl set image deployment/flask-hello flask-hello="$DOCKER_REPO:$VERSION_TAG"'
                     }
