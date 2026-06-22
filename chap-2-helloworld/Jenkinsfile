@@ -15,7 +15,7 @@ pipeline {
         stage("Build Docker Image") {
             steps {
                 dir(PROJECT_DIR) {
-                    sh 'docker build --build-arg BASE_IMAGE=$BASE_IMAGE --build-arg APP_PORT=$APP_PORT -t "$DOCKER_REPO:${BUILD_TIMESTAMP}" .'
+                    sh 'docker build --build-arg BASE_IMAGE=$BASE_IMAGE --build-arg APP_PORT=$APP_PORT -t "$DOCKER_REPO:$VERSION_TAG" .'
                 }
             }
         }
@@ -26,7 +26,7 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: 'docker-registry', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         script {
                             sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
-                            sh 'docker push "$DOCKER_REPO:${BUILD_TIMESTAMP}"'
+                            sh 'docker push "$DOCKER_REPO:$VERSION_TAG"'
                         }
                     }
                 }
