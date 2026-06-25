@@ -39,7 +39,7 @@ pipeline {
                     withKubeConfig(credentialsId: 'kubeconfig-staging') {
                         sh "kubectl config use-context staging"
                         sh "sed -i 's|{{VERSION}}|${VERSION_TAG}|g' deployment.yaml"
-                        sh "kubectl apply -f deployment.yaml"
+                        sh "kubectl apply -f deployment.yaml --insecure-skip-tls-verify=true"
                     }
                 }
             }
@@ -61,7 +61,7 @@ pipeline {
                 dir(PROJECT_DIR) {
                     withKubeConfig(credentialsId: 'kubeconfig-prod') {
                         sh "kubectl config use-context production"
-                        sh "kubectl apply -f deployment.yaml"
+                        sh "kubectl apply -f deployment.yaml --insecure-skip-tls-verify=true"
                     }
                 }
             }
