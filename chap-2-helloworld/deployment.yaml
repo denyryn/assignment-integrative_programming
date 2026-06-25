@@ -21,7 +21,8 @@ spec:
     spec:
       containers:
         - name: flask-hello
-          image: flask-hello:latest
+          image: {{VERSION}} 
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
           readinessProbe:
