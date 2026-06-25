@@ -1,14 +1,4 @@
 services:
   flask-hello:
     build: .
-    networks:
-      - traefik-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.flask.rule=Host(`hello.localhost`)"
-      - "traefik.http.services.flask.loadbalancer.server.port=${APP_PORT:-8000}"
     restart: unless-stopped
-
-networks:
-  traefik-network:
-    external: true
